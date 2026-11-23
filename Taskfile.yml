@@ -1,46 +1,8 @@
 version: '3'
 
 tasks:
-  lint:
-    desc: ShellCheck every shell script
-    cmds:
-      - shellcheck --external-sources --shell sh $(find tests skills -name '*.sh' -type f)
-
-  lint-file:
-    desc: ShellCheck the shell scripts given after --
-    cmds:
-      - |
-        for f in {{range .CLI_ARGS_LIST}}{{shellQuote .}} {{end}}; do
-          case "$f" in
-          *.sh) shellcheck --external-sources --shell sh "$f" || exit 1 ;;
-          esac
-        done
-
-  test:
-    desc: Run the shunit2 tests, or just the test files given after --
-    vars:
-      FILES: '{{if .CLI_ARGS_LIST}}{{range .CLI_ARGS_LIST}}{{shellQuote .}} {{end}}{{else}}tests/*_test.sh{{end}}'
-    cmds:
-      # Every file runs, so one failure doesn't hide the rest.
-      - |
-        failed=0
-        for t in {{.FILES}}; do
-          echo "== $(basename "$t")"
-          sh "$t" || failed=1
-        done
-        exit "$failed"
-
-  tags:
-    desc: Build the flake, then lint this repository's tags with the command it packages
-    cmds:
-      # The skill's examples and the tests' fixtures are tags by design, some of them broken.
-      - |
-        out=$(nix --extra-experimental-features 'nix-command flakes' build .#coupled-tags-lint --no-link --print-out-paths)
-        "$out/bin/coupled-tags-lint" -x skills -x tests
-
   check:
-    desc: Lint, test, then build the flake and lint the tags, failing on any problem
+    desc: Check the repository, which holds only the skill's Markdown
     cmds:
-      - task: lint
-      - task: test
-      - task: tags
+      # The format the skill teaches is tested in coupled-tags-lint, which defines it in code.
+      - echo "Nothing to check."

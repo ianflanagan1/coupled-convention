@@ -1,5 +1,5 @@
 # coupled-tags
 
-`devbox run -- task check` runs ShellCheck, the shunit2 tests and the flake build; run it before finishing. `devbox run -- task lint-file -- <files>` checks the shell scripts given.
+`devbox run -- task check` checks this repository, which holds only the skill's Markdown, so there's nothing for it to run; run it before finishing.
 
-`skills/ianf-coupled-tags/scripts/coupled-tags-lint.sh` is POSIX `sh` and awk. `flake.nix` packages it as `coupled-tags-lint`, which other projects add to their devbox from GitHub, so a change reaches them only once it's pushed and they run `devbox update`. `scripts/coupled-tags-gate.py` runs under `python3 -I` with only the standard library. When the tag format changes, change SKILL.md, the README, the lint script and the hook together.
+The lint and the Claude Code hooks are in coupled-tags-lint (`~/projects/cli/coupled-tags-lint`), which defines the marker and registry format in code. When the format changes, change SKILL.md, this README, and the lint's `core/markers.py`, `core/relations.py`, `core/registry.py` and README together.
