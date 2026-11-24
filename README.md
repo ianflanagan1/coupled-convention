@@ -1,4 +1,4 @@
-# COUPLED tags
+# COUPLED markers
 
 A convention for code and values that must change together but can't share a single source of truth. Each place carries a greppable marker, `COUPLED:<key>: <label>`, and the repository's registry, `coupled-registry.toml`, describes each group: how its places relate. Whoever changes one runs `grep --recursive --line-number 'COUPLED:<key>:'` and finds the others, and the group's table beside them.
 
