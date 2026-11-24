@@ -26,7 +26,7 @@ Some things must change together but cannot share a single source of truth: a ru
 - A marker describes the code before its comment on its line, or for a marker on a comment line, the first line of code after it, past other comment lines but not a blank line.
 - `COUPLED:<key>:END`, in a comment on the line after a block's last, closes the nearest marker of its key above it, so it describes every line down to the END. Only in groups using structural ops. Blocks of different keys can nest but not overlap.
 - `COUPLED:IGNORE-FILE`, on a line of its own, says a file's `COUPLED:` text is all examples, as in this skill: the lint and the hooks skip the file. Don't add it to a file holding real sites.
-- If the repository's settings set `tag-relations` or `tag-pointer`, each label is followed by a message: the site's relations, then what to search for and where the group is described. `coupled --fix` writes it from the registry; don't write or edit it by hand.
+- If the repository's settings set `markers-show-relations` or `markers-point-to-registry`, each label is followed by a message: the site's relations, then what to search for and where the group is described. `coupled --fix` writes it from the registry; don't write or edit it by hand.
 
 ## The registry
 

@@ -151,7 +151,7 @@ relations = ["php-ini subset-of phpstan"]
 
 ## Format
 
-The skill, [SKILL.md](skills/ianf-coupled/SKILL.md), and [coupled's README](https://github.com/ianflanagan1/coupled#markers-and-the-registry) give the format in full: markers and blocks, the registry's tables and relations, how values are read and compared, the reviewed section, and the settings, including `tag-relations` and `tag-pointer`, which follow each label with its site's relations, and with a pointer for readers who don't know the convention.
+The skill, [SKILL.md](skills/ianf-coupled/SKILL.md), and [coupled's README](https://github.com/ianflanagan1/coupled#markers-and-the-registry) give the format in full: markers and blocks, the registry's tables and relations, how values are read and compared, the reviewed section, and the settings, including `markers-show-relations` and `markers-point-to-registry`, which follow each label with its site's relations, and with a pointer for readers who don't know the convention.
 
 ### Choosing a key and labels
 
