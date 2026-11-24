@@ -74,7 +74,7 @@ files = ["./.python-version"]
 
 ```nginx
 # nginx/default.conf
-client_max_body_size 10m;      # COUPLED:upload-size-limit: nginx
+client_max_body_size 10m;      # COUPLED:upload-size-limit: proxy
 ```
 ```python
 # app/settings.py
@@ -82,7 +82,8 @@ MAX_UPLOAD_MB = 8              # COUPLED:upload-size-limit: app
 ```
 ```toml
 ["COUPLED:upload-size-limit:"]
-relations = ["nginx >= app"]
+relations = ["proxy >= app"]
+why = "the proxy rejects a larger body before the app sees it"
 ```
 
 ---
@@ -95,11 +96,11 @@ server.keepAliveTimeout = 65_000;  // COUPLED:keepalive-timeout: server
 ```
 ```markdown
 <!-- docs/external/aws-alb.md -->
-Idle timeout: `60` s (EC2 console > Load balancers > prod-alb > Attributes). COUPLED:keepalive-timeout: alb
+Idle timeout: `60` s (EC2 console > Load balancers > prod-alb > Attributes). COUPLED:keepalive-timeout: load-balancer
 ```
 ```toml
 ["COUPLED:keepalive-timeout:"]
-relations = ["server > alb * 1000"]
+relations = ["app > load-balancer * 1000"]
 ```
 
 The formula converts units: the app's value is in ms, the load balancer's in s.
@@ -138,7 +139,7 @@ A file in another repository, which the lint names as not checked:
 
 ```toml
 ["COUPLED:coverage-listing-shape:"]
-relations = ["go same-shape //github.com/ianflanagan1/code-rulebook/schema/coverage.schema.json"]
+relations = ["writer same-shape //github.com/ianflanagan1/code-rulebook/schema/coverage.schema.json"]
 ```
 
 Lists that must contain each other:
@@ -150,11 +151,13 @@ relations = ["php-ini subset-of phpstan"]
 
 ## Format
 
-The skill, [SKILL.md](skills/ianf-coupled/SKILL.md), and [coupled's README](https://github.com/ianflanagan1/coupled#markers-and-the-registry) give the format in full: markers and blocks, the registry's tables and relations, how values are read and compared, the reviewed section, and the settings, including `tag-message`, which follows each label with a message for readers who don't know the convention.
+The skill, [SKILL.md](skills/ianf-coupled/SKILL.md), and [coupled's README](https://github.com/ianflanagan1/coupled#markers-and-the-registry) give the format in full: markers and blocks, the registry's tables and relations, how values are read and compared, the reviewed section, and the settings, including `tag-relations` and `tag-pointer`, which follow each label with its site's relations, and with a pointer for readers who don't know the convention.
 
-### Choosing a key
+### Choosing a key and labels
 
-Name the invariant the group protects, not where it lives: `request-timeout-chain`, not `nginx-timeouts`. If an unrelated setting could plausibly carry the key, it's too vague. Name each label for its site's place in the group: `nginx`, `app`, `ci`.
+Name the invariant the group protects, not where it lives: `request-timeout-chain`, not `nginx-timeouts`. If an unrelated setting could plausibly carry the key, it's too vague.
+
+Name each group's labels on their own, along one axis, the one way its sites differ that explains the relations, so each relation reads as the invariant: components (`proxy >= app`), the sides of a contract (`client`, `server`), the tools a pin is read by (`docker`, `ci`), or environments (`dev`, `prod`). Components take the project's own names first, from the Compose service that holds each site's file, as the project writes them; where none does, their role in whole words (`database`, not `db`). When one component holds several sites, add what each holds: `app-body`, `app-file`.
 
 ### Other repositories
 
@@ -170,7 +173,7 @@ Another repository is never an external system, even when it isn't checked out: 
 
 The `ianf-coupled` skill teaches Claude the convention:
 
-- **Adding:** `/ianf-coupled <this> with <that> [as <key>]`. Claude finds every site, marks each one, writes the group's table, checks the relations hold and runs `coupled --fix --update`, which needs to be on your PATH. If you don't give a key, it proposes one and waits for your choice.
+- **Adding:** `/ianf-coupled <this> with <that> [as <key>]`. Claude finds every site, marks each one, writes the group's table, checks the relations hold and runs `coupled --fix --update <key>`, which needs to be on your PATH. If you don't give a key, it proposes one and waits for your choice.
 - **Honouring:** before editing anything marked `COUPLED:`, Claude searches for the key, reads the group, and updates every site.
 
 Clone to `~/projects/claude/coupled-convention`, then link the skill into your skills folder:
