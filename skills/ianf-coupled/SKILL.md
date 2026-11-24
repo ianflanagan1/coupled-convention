@@ -24,7 +24,7 @@ Some things must change together but cannot share a single source of truth: a ru
 - Prose goes before `COUPLED:`, or after the label and a `.`: `# COUPLED:upload-limit: proxy. Larger bodies get a 413.` Never straight after the label without the `.`.
 - A site in two groups gets two markers; they can share a comment: `# COUPLED:a: x. COUPLED:b: y`.
 - A marker describes the code before its comment on its line, or for a marker on a comment line, the first line of code after it, past other comment lines but not a blank line.
-- `COUPLED:<key>:END`, in a comment on the line after a block's last, closes the nearest marker of its key above it, so it describes every line down to the END. Only in groups using structural ops. Blocks of different keys can nest but not overlap.
+- `COUPLED:<key>:END`, in a comment on the line after a block's last, closes the nearest marker of its key above it, so it describes every line down to the END. Not in groups using value ops, where a marker describes one line. Blocks of different keys can nest but not overlap.
 - `COUPLED:IGNORE-FILE`, on a line of its own, says a file's `COUPLED:` text is all examples, as in this skill: the lint and the hooks skip the file. Don't add it to a file holding real sites.
 - If the repository's settings set `markers-show-relations` or `markers-point-to-registry`, each label is followed by a message: the site's relations, then what to search for and where the group is described. `coupled --fix` writes it from the registry; don't write or edit it by hand.
 
@@ -41,14 +41,17 @@ relations = ["proxy >= app", "proxy = ./limits.json#/upload_mb"]
 
 - `relations`: each `<ref> <op> <ref> [<arith> <number>]`, read as: the first ref's value, by op, the second's after the formula. Write each relation once; there are no mirrors.
   - A ref is a site, by its label, or a file that can't hold a marker (below).
-  - Or a bare op alone, `["="]`, `["same-as"]` or `["same-shape"]`, when every site and file in the group is the same.
-- `<op>` is one of two kinds, and a group uses only one; split it into two keys if it needs both.
+  - Or a bare op alone, `["="]`, `["same-set"]`, `["same-text"]`, `["same-as"]` or `["same-shape"]`, when every site and file in the group is the same.
+- `<op>` is one of four kinds, by what it reads each site as, and a group uses only one kind; split it into two keys if it needs two.
   - Value ops `=`, `!=`, `<`, `<=`, `>`, `>=` compare single values, and the lint checks them (see Values).
-  - Structural ops relate code or structure, which the lint doesn't compare: `same-as` (duplicated code), `same-shape` (types and schemas with the same fields), `subset-of` and `superset-of` (lists).
+  - Set ops `same-set`, `subset-of` and `superset-of` compare the names each site holds, such as an enum's members, a table's columns or a list, and the lint checks them (see Sets and text).
+  - The text op `same-text` compares the sites' text, such as a block copied between two files, and the lint checks it (see Sets and text).
+  - Judged ops relate code or prose that only a reader can compare, so the lint records each block and reports a change to one: `same-as` (code that must behave the same, such as one calculation in two languages), `same-shape` (types and schemas with the same fields), `description-of` (prose that must stay true of code; `described-by` is the same relation written from the code).
+  - Choose a kind the lint checks wherever the sites can be read that way, and a judged op only when they can't.
 - `<arith> <number>`: `+`, `-`, `*` or `/` and a number, applied to the second ref's value. Use it for a margin (`proxy >= app + 5`) or a change of units (`app > load-balancer * 1000`, ms against s).
 - `files`: files in a group whose relation is a bare op, since no relation names them.
-- `select`: a regex for a site, by its label, picking its value out of its line when the lint can't, with the value in its one capture group: `select = { url = ':(\d+)$' }`.
-- `why`: why the sites must change together, in a sentence, which the lint and the hooks show to whoever changes a site: `why = "nginx rejects a larger body before the app sees it"`. Give every group one unless its key says it.
+- `select`: a regex for a site, by its label, picking its value out of its line when the lint can't, with the value in its one capture group: `select = { url = ':(\d+)$' }`. In a group using set ops, it picks each member out of the site's block, one for each match.
+- `why`: why the sites must change together, in a sentence, which the lint and the hooks show to whoever changes a site: `why = "nginx rejects a larger body before the app sees it"`. A group using judged ops must have one, since it's all that tells a reviewer what must hold. Give every other group one unless its key says it.
 - Below the groups, `coupled --update <key>` writes the reviewed section. Never edit it.
 
 ## Files that can't hold a marker
@@ -70,7 +73,7 @@ In a group using value ops, the lint reads each site's value from the line its m
 3. the right-hand side of an assignment (`HTTP_PORT=8080`, `key: value`)
 4. a directive's value (`client_max_body_size 10m;`)
 
-When a line has several candidates or none, add a `select` regex for its label. If the sites don't hold single values (lists, blocks, shapes), use a structural op instead.
+When a line has several candidates or none, add a `select` regex for its label. If the sites don't hold single values (lists, blocks, shapes), use a set, text or judged op instead.
 
 Values compare like this:
 - Versions match on the parts both give, so `24`, `24.22` and `24.22.1` are all `=`.
@@ -78,6 +81,19 @@ Values compare like this:
 - Anything else compares as text, by `=` and `!=` only.
 
 Write each value in its own file's notation (`10m` in nginx, `10M` in php.ini, `8` for `MAX_UPLOAD_MB`), never converted for the lint's sake. The reviewed section records each site's unit, so a unit changed at one site fails until the group is reviewed.
+
+## Sets and text
+
+In a group using set ops, the lint reads each site's members from its block, which an END closes, or from the one line its marker describes. It takes:
+
+- the quoted literals on the block's lines (`"pending" | "stored"`, `PENDING = "pending"`)
+- or, when the site's label has a `select` regex, each match of it, with the member in its one capture group: `select = { table = '^([a-z_]+) ' }` for a table's columns
+
+A file gives the items of the JSON list at its pointer, or the keys of the object there, or with no pointer, its lines. Members compare as text, in any order.
+
+In a group using `same-text`, the lint compares the sites' blocks line by line. Indentation, blank lines and the markers of sites inside a block aren't part of its text. A file's text is all of it, or the JSON at its pointer.
+
+When only part of what two sites share can be compared, mark them for two groups: a table's column names and a model's field names as `same-set`, and the two under `same-shape` for their types.
 
 ## Placement
 
@@ -138,11 +154,19 @@ relations = ["app > load-balancer * 1000"]
 relations = ["url = port"]
 select = { url = ':(\d+)$' }
 
+["COUPLED:upload-status:"]
+relations = ["web subset-of app"]
+
+["COUPLED:setup-steps:"]
+relations = ["same-text"]
+
 ["COUPLED:password-rules:"]
-relations = ["client same-as server"]
+relations = ["client same-as server", "help-page description-of server"]
+why = "the form must refuse what the server would, and the help page says what both accept"
 
 ["COUPLED:coverage-listing-shape:"]
 relations = ["writer same-shape //github.com/ianflanagan1/code-rulebook/schema/coverage.schema.json"]
+why = "the rulebook's schema validates the listing this writes"
 ```
 
 ## External systems
@@ -153,7 +177,7 @@ Another repository is never an external system, even one that isn't checked out 
 
 ## The reviewed section
 
-The registry's reviewed section records each group as it was last reviewed: a fingerprint of its table, each site's marker, each value's unit, and a fingerprint of each block or file a structural op relates. The lint fails when a group differs from it, and names the group's other sites. `coupled --update <key>` records the group of each key it names as it is now, so run it only for a group whose every site is changed together and holds, never just to clear the failure. Commit the registry with the change.
+The registry's reviewed section records each group as it was last reviewed: a fingerprint of its table, each site's marker, each value's unit, and a fingerprint of each block or file a judged op relates. Values, sets and text aren't recorded, since the lint compares them on every run. The lint fails when a group differs from it, and names the group's other sites. `coupled --update <key>` records the group of each key it names as it is now, so run it only for a group whose every site is changed together and holds, never just to clear the failure. Commit the registry with the change.
 
 ## Adding a group (`/ianf-coupled $ARGUMENTS`)
 
@@ -162,7 +186,7 @@ The registry's reviewed section records each group as it was last reviewed: a fi
 3. Reuse an existing group if this one already has one (search for `COUPLED:`).
 4. Mark each site with the key and a label. For a site in another repository, mark it there if it's checked out, otherwise tell the user which file in which repository needs the marker.
 5. Add the group's table to the registry, creating it with `version = 1` if there's none: its relations, each written once, its files and selectors, and why its sites must change together.
-6. Check that the relations hold now: the lint checks value ops, and you judge structural ones. Never silently change a value to make one hold.
+6. Check that the relations hold now: the lint checks value, set and text ops, and you judge the rest. Never silently change a value to make one hold.
 7. For sites in an external system, create or update `docs/external/<service>.md`.
 8. Run `coupled --fix --update <key>` from the repo root, which writes the message after each label if the settings ask for it, and records the group in the registry's reviewed section; then fix what it reports, other than relations that don't hold now. If the command isn't found, tell the user it's installed from https://github.com/ianflanagan1/coupled, and check the markers and the table by reading them against this file.
 9. Reply `✅ Marked COUPLED:<key>:.`, then each site as `path:line`, then each relation that doesn't hold now.

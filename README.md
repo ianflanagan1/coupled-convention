@@ -2,7 +2,7 @@
 
 A convention for code and values that must change together but can't share a single source of truth. Each place carries a greppable marker, `COUPLED:<key>: <label>`, and the repository's registry, `coupled-registry.toml`, describes each group: how its places relate. Whoever changes one runs `grep --recursive --line-number 'COUPLED:<key>:'` and finds the others, and the group's table beside them.
 
-It comes with a lint, [coupled](https://github.com/ianflanagan1/coupled), which checks that markers and registry agree, that the values they relate hold, and that no group has changed since it was last reviewed, and which gives Claude Code two hooks. This repository holds the Claude Code skill.
+It comes with a lint, [coupled](https://github.com/ianflanagan1/coupled), which checks that markers and registry agree, that the relations it can compare hold, between values, sets of names and blocks of text, and that no group has changed since it was last reviewed, and which gives Claude Code two hooks. This repository holds the Claude Code skill.
 
 ## Why
 
@@ -42,10 +42,10 @@ private int calculateVat(int netPence) {
 ```
 ```toml
 ["COUPLED:vat-calculation:"]
-relations = ["same-as"]
+relations = ["same-text"]
 ```
 
-`COUPLED:vat-calculation:END` closes each block, so the marker covers the whole function. Without it, a marker covers only the line after it.
+`COUPLED:vat-calculation:END` closes each block, so the marker covers the whole function. Without it, a marker covers only the line after it. The two copies are in one language, so `same-text` has the lint compare them line by line. Copies in two languages would be `same-as`, which the lint can't compare: it records each block, and reports a change to one until the group is reviewed.
 
 ---
 
@@ -140,18 +140,33 @@ A file in another repository, which the lint names as not checked:
 ```toml
 ["COUPLED:coverage-listing-shape:"]
 relations = ["writer same-shape //github.com/ianflanagan1/code-rulebook/schema/coverage.schema.json"]
+why = "the rulebook's schema validates the listing this writes"
 ```
 
-Lists that must contain each other:
+A group whose op the lint can't compare, such as `same-shape`, must say why its sites are coupled, since that's all that tells a reviewer what must hold.
 
+Lists that must contain each other, which the lint compares by their members: the quoted values in each site's block, or what a selector picks out.
+
+```ini
+disable_functions = exec,passthru,shell_exec  ; COUPLED:disabled-functions: php-ini
+```
 ```toml
 ["COUPLED:disabled-functions:"]
 relations = ["php-ini subset-of phpstan"]
+select = { php-ini = '[=,]\s*(\w+)' }
+```
+
+Prose that must stay true of the code it describes:
+
+```toml
+["COUPLED:password-rules:"]
+relations = ["client same-as server", "help-page description-of server"]
+why = "the form must refuse what the server would, and the help page says what both accept"
 ```
 
 ## Format
 
-The skill, [SKILL.md](skills/ianf-coupled/SKILL.md), and [coupled's README](https://github.com/ianflanagan1/coupled#markers-and-the-registry) give the format in full: markers and blocks, the registry's tables and relations, how values are read and compared, the reviewed section, and the settings, including `markers-show-relations` and `markers-point-to-registry`, which follow each label with its site's relations, and with a pointer for readers who don't know the convention.
+The skill, [SKILL.md](skills/ianf-coupled/SKILL.md), and [coupled's README](https://github.com/ianflanagan1/coupled#markers-and-the-registry) give the format in full: markers and blocks, the registry's tables and relations, the four kinds of op, how values, sets and text are read and compared, the reviewed section, and the settings, including `markers-show-relations` and `markers-point-to-registry`, which follow each label with its site's relations, and with a pointer for readers who don't know the convention.
 
 ### Choosing a key and labels
 
