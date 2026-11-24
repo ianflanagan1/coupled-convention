@@ -4,5 +4,5 @@ tasks:
   check:
     desc: Check the repository, which holds only the skill's Markdown
     cmds:
-      # The format the skill teaches is tested in coupled-tags-lint, which defines it in code.
+      # The format the skill teaches is tested in coupled, which defines it in code.
       - echo "Nothing to check."

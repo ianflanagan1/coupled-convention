@@ -1,8 +1,8 @@
 ---
-name: ianf-coupled-tags
-description: "Add COUPLED markers (e.g. `# COUPLED:upload-limit: nginx`) and their group in coupled-tags-registry.toml, linking values or code that must change together but can't share a single source of truth. When editing anything marked COUPLED:, change every site in its group together."
+name: ianf-coupled
+description: "Add COUPLED markers (e.g. `# COUPLED:upload-limit: nginx`) and their group in coupled-registry.toml, linking values or code that must change together but can't share a single source of truth. When editing anything marked COUPLED:, change every site in its group together."
 argument-hint: <this> with <that> [as <key>]
-allowed-tools: Bash(coupled-tags-lint *)
+allowed-tools: Bash(coupled *)
 disable-model-invocation: false
 model: inherit
 ---
@@ -26,11 +26,11 @@ Some things must change together but cannot share a single source of truth: a ru
 - A marker describes the code before its comment on its line, or for a marker on a comment line, the first line of code after it, past other comment lines but not a blank line.
 - `COUPLED:<key>:END`, in a comment on the line after a block's last, closes the nearest marker of its key above it, so it describes every line down to the END. Only in groups using structural ops. Blocks of different keys can nest but not overlap.
 - `COUPLED:IGNORE-FILE`, on a line of its own, says a file's `COUPLED:` text is all examples, as in this skill: the lint and the hooks skip the file. Don't add it to a file holding real sites.
-- If the repository's settings turn on `tag-message`, each label is followed by a message saying what to search for and where the group is described. `coupled-tags-lint --fix` writes it; don't write it by hand.
+- If the repository's settings turn on `tag-message`, each label is followed by a message saying what to search for and where the group is described. `coupled --fix` writes it; don't write it by hand.
 
 ## The registry
 
-`coupled-tags-registry.toml` at the repository's root, unless `.config/coupled-tags.toml` names another file as `registry-file`. Each group is a table named as its markers are searched for:
+`coupled-registry.toml` at the repository's root, unless `.config/coupled.toml` names another file as `registry-file`. Each group is a table named as its markers are searched for:
 
 ```toml
 version = 1
@@ -48,7 +48,7 @@ relations = ["nginx >= app", "nginx = ./limits.json#/upload_mb"]
 - `<arith> <number>`: `+`, `-`, `*` or `/` and a number, applied to the second ref's value. Use it for a margin (`proxy >= app + 5`) or a change of units (`keepalive > idle * 1000`, ms against s).
 - `files`: files in a group whose relation is a bare op, since no relation names them.
 - `select`: a regex for a site, by its label, picking its value out of its line when the lint can't, with the value in its one capture group: `select = { url = ':(\d+)$' }`.
-- Below the groups, `coupled-tags-lint --update` writes the reviewed section. Never edit it.
+- Below the groups, `coupled --update` writes the reviewed section. Never edit it.
 
 ## Files that can't hold a marker
 
@@ -141,9 +141,9 @@ Another repository is never an external system, even one that isn't checked out 
 
 ## The reviewed section
 
-The registry's reviewed section records each group as it was last reviewed: a fingerprint of its table, each site's marker, each value's unit, and a fingerprint of each block or file a structural op relates. The lint fails when a group differs from it, and names the group's other sites. `coupled-tags-lint --update` records the groups as they are now, so run it only once every site of the group is changed together and the group holds, never just to clear the failure. Commit the registry with the change.
+The registry's reviewed section records each group as it was last reviewed: a fingerprint of its table, each site's marker, each value's unit, and a fingerprint of each block or file a structural op relates. The lint fails when a group differs from it, and names the group's other sites. `coupled --update` records the groups as they are now, so run it only once every site of the group is changed together and the group holds, never just to clear the failure. Commit the registry with the change.
 
-## Adding a group (`/ianf-coupled-tags $ARGUMENTS`)
+## Adding a group (`/ianf-coupled $ARGUMENTS`)
 
 1. Settle the key (see above).
 2. Find every site, not only the ones named. Search for the literal value and related names across dev and prod configs, build files, app code and docs, and in any other repository the user names.
@@ -152,7 +152,7 @@ The registry's reviewed section records each group as it was last reviewed: a fi
 5. Add the group's table to the registry, creating it with `version = 1` if there's none: its relations, each written once, and its files and selectors.
 6. Check that the relations hold now: the lint checks value ops, and you judge structural ones. Never silently change a value to make one hold.
 7. For sites in an external system, create or update `docs/external/<service>.md`.
-8. Run `coupled-tags-lint --fix --update` from the repo root, which writes the message after each label if the settings ask for it, and records the group in the registry's reviewed section; then fix what it reports, other than relations that don't hold now. If the command isn't found, tell the user it's installed from https://github.com/ianflanagan1/coupled-tags-lint, and check the markers and the table by reading them against this file.
+8. Run `coupled --fix --update` from the repo root, which writes the message after each label if the settings ask for it, and records the group in the registry's reviewed section; then fix what it reports, other than relations that don't hold now. If the command isn't found, tell the user it's installed from https://github.com/ianflanagan1/coupled, and check the markers and the table by reading them against this file.
 9. Reply `✅ Marked COUPLED:<key>:.`, then each site as `path:line`, then each relation that doesn't hold now.
 
 ## Changing a marked value or block
@@ -160,4 +160,4 @@ The registry's reviewed section records each group as it was last reviewed: a fi
 1. Search for `COUPLED:<key>:` and read every site, down to its `COUPLED:<key>:END` if it has one, the group's table in the registry, and every file the table names. For a `//<git-host>/<owner>/<name>/<path>` ref, search that repository for the key too, or read the file on its git host if it isn't checked out.
 2. Change them all together, so every relation still holds. Change the table's relations only if what must hold has changed.
 3. For a site in another repository, change it there if it's checked out; otherwise tell the user what to change in which repository. For sites in an external system, tell the user what to change there, and update the external doc.
-4. Run `coupled-tags-lint` and fix what it reports. When it reports that the group differs from what was reviewed, check that every site it names is changed and the group holds, then rerun with `--update`.
+4. Run `coupled` and fix what it reports. When it reports that the group differs from what was reviewed, check that every site it names is changed and the group holds, then rerun with `--update`.

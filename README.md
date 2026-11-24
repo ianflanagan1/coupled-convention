@@ -1,8 +1,8 @@
 # COUPLED tags
 
-A convention for code and values that must change together but can't share a single source of truth. Each place carries a greppable marker, `COUPLED:<key>: <label>`, and the repository's registry, `coupled-tags-registry.toml`, describes each group: how its places relate. Whoever changes one runs `grep --recursive --line-number 'COUPLED:<key>:'` and finds the others, and the group's table beside them.
+A convention for code and values that must change together but can't share a single source of truth. Each place carries a greppable marker, `COUPLED:<key>: <label>`, and the repository's registry, `coupled-registry.toml`, describes each group: how its places relate. Whoever changes one runs `grep --recursive --line-number 'COUPLED:<key>:'` and finds the others, and the group's table beside them.
 
-It comes with a lint, [coupled-tags-lint](https://github.com/ianflanagan1/coupled-tags-lint), which checks that markers and registry agree, that the values they relate hold, and that no group has changed since it was last reviewed, and which gives Claude Code two hooks. This repository holds the Claude Code skill.
+It comes with a lint, [coupled](https://github.com/ianflanagan1/coupled), which checks that markers and registry agree, that the values they relate hold, and that no group has changed since it was last reviewed, and which gives Claude Code two hooks. This repository holds the Claude Code skill.
 
 ## Why
 
@@ -150,7 +150,7 @@ relations = ["php-ini subset-of phpstan"]
 
 ## Format
 
-The skill, [SKILL.md](skills/ianf-coupled-tags/SKILL.md), and [coupled-tags-lint's README](https://github.com/ianflanagan1/coupled-tags-lint#markers-and-the-registry) give the format in full: markers and blocks, the registry's tables and relations, how values are read and compared, the reviewed section, and the settings, including `tag-message`, which follows each label with a message for readers who don't know the convention.
+The skill, [SKILL.md](skills/ianf-coupled/SKILL.md), and [coupled's README](https://github.com/ianflanagan1/coupled#markers-and-the-registry) give the format in full: markers and blocks, the registry's tables and relations, how values are read and compared, the reviewed section, and the settings, including `tag-message`, which follows each label with a message for readers who don't know the convention.
 
 ### Choosing a key
 
@@ -168,21 +168,21 @@ Another repository is never an external system, even when it isn't checked out: 
 
 ## Claude Code
 
-The `ianf-coupled-tags` skill teaches Claude the convention:
+The `ianf-coupled` skill teaches Claude the convention:
 
-- **Adding:** `/ianf-coupled-tags <this> with <that> [as <key>]`. Claude finds every site, marks each one, writes the group's table, checks the relations hold and runs `coupled-tags-lint --fix --update`, which needs to be on your PATH. If you don't give a key, it proposes one and waits for your choice.
+- **Adding:** `/ianf-coupled <this> with <that> [as <key>]`. Claude finds every site, marks each one, writes the group's table, checks the relations hold and runs `coupled --fix --update`, which needs to be on your PATH. If you don't give a key, it proposes one and waits for your choice.
 - **Honouring:** before editing anything marked `COUPLED:`, Claude searches for the key, reads the group, and updates every site.
 
-Clone to `~/projects/claude/coupled-tags`, then link the skill into your skills folder:
+Clone to `~/projects/claude/coupled-convention`, then link the skill into your skills folder:
 
 ```sh
-ln -s ~/projects/claude/coupled-tags/skills/ianf-coupled-tags ~/.claude/skills/ianf-coupled-tags
+ln -s ~/projects/claude/coupled-convention/skills/ianf-coupled ~/.claude/skills/ianf-coupled
 ```
 
-It's invoked as `/ianf-coupled-tags`. The `ianf-` prefix keeps it from colliding with other skills of the same name.
+It's invoked as `/ianf-coupled`. The `ianf-` prefix keeps it from colliding with other skills of the same name.
 
-To share it with a repository's contributors, copy the skill into its `.claude/skills/ianf-coupled-tags/` instead. `SKILL.md` starts with `<!-- COUPLED:IGNORE-FILE -->`, so coupled-tags-lint and its hooks skip the copy's example markers there, or wherever else it's put, with no `exclude` in the repository's settings.
+To share it with a repository's contributors, copy the skill into its `.claude/skills/ianf-coupled/` instead. `SKILL.md` starts with `<!-- COUPLED:IGNORE-FILE -->`, so coupled and its hooks skip the copy's example markers there, or wherever else it's put, with no `exclude` in the repository's settings.
 
 ### Hooks
 
-A skill's description doesn't guarantee Claude loads it just because it's editing a marked line. coupled-tags-lint's `coupled-tags-hook` does: as a `PostToolUse` hook on Read it shows Claude the groups in each file it reads, and as a `PreToolUse` hook on Edit, MultiEdit and Write it stops the first edit to a marked line in a session until Claude has seen the group. [Its README](https://github.com/ianflanagan1/coupled-tags-lint#the-claude-code-hooks) says how to add them to `~/.claude/settings.json`.
+A skill's description doesn't guarantee Claude loads it just because it's editing a marked line. coupled's `coupled-hook` does: as a `PostToolUse` hook on Read it shows Claude the groups in each file it reads, and as a `PreToolUse` hook on Edit, MultiEdit and Write it stops the first edit to a marked line in a session until Claude has seen the group. [Its README](https://github.com/ianflanagan1/coupled#the-claude-code-hooks) says how to add them to `~/.claude/settings.json`.
