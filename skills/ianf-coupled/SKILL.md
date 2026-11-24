@@ -51,6 +51,7 @@ relations = ["proxy >= app", "proxy = ./limits.json#/upload_mb"]
 - `<arith> <number>`: `+`, `-`, `*` or `/` and a number, applied to the second ref's value. Use it for a margin (`proxy >= app + 5`) or a change of units (`app > load-balancer * 1000`, ms against s).
 - `files`: files in a group whose relation is a bare op, since no relation names them.
 - `select`: a regex for a site, by its label, picking its value out of its line when the lint can't, with the value in its one capture group: `select = { url = ':(\d+)$' }`. In a group using set ops, it picks each member out of the site's block, one for each match.
+- `has-no-file`: each site that's in no file at all, by a label the relations name it by, with where it's set: `has-no-file = { google = "Google Cloud console > Credentials > Authorised redirect URIs" }`. See External systems.
 - `why`: why the sites must change together, in a sentence, which the lint and the hooks show to whoever changes a site: `why = "nginx rejects a larger body before the app sees it"`. A group using judged ops must have one, since it's all that tells a reviewer what must hold. Give every other group one unless its key says it.
 - Below the groups, `coupled --update <key>` writes the reviewed section. Never edit it.
 
@@ -171,7 +172,20 @@ why = "the rulebook's schema validates the listing this writes"
 
 ## External systems
 
-An external system keeps its settings in no repository at all: a cloud console, DNS, a provider's dashboard. Nothing can be marked at its end, so the repo needs a written record of it. Keep the **current** configuration of each external system in `docs/external/<service>.md`: what is set, where, and for which environment. Mark each value in that doc like any other site, with the value in backticks on the marker's line (`` Idle timeout: `60` s. COUPLED:keepalive-timeout: load-balancer ``), so the lint can read it. Create or update it whenever an external coupling is added or changed. Leave visible TODOs for values you cannot see.
+An external system keeps its settings in no repository at all: a cloud console, DNS, a provider's dashboard. Nothing can be marked at its end, so it joins a group in one of two ways.
+
+Prefer a doc. Keep the **current** configuration of each external system in `docs/external/<service>.md`: what is set, where, and for which environment. Mark each value in that doc like any other site, with the value in backticks on the marker's line (`` Idle timeout: `60` s. COUPLED:keepalive-timeout: load-balancer ``), so the lint can read it and compare it with the rest of the group. Create or update it whenever an external coupling is added or changed. Leave visible TODOs for values you cannot see.
+
+When the user doesn't want a doc, or you can't see the value to record it, name the site in the group's `has-no-file` instead, with where it's set, and relate it by its label like any other site:
+
+```toml
+["COUPLED:oauth-redirect:"]
+relations = ["app = google"]
+has-no-file = { google = "Google Cloud console > APIs & Services > Credentials > the web client > Authorised redirect URIs" }
+why = "Google refuses to send a user back to a URI the client doesn't list"
+```
+
+The lint can't compare the value of a site with no file, and lists it as not checked; the table still tells whoever changes another site what to change and where. To move one to a doc later, mark it there and drop it from `has-no-file`.
 
 Another repository is never an external system, even one that isn't checked out here: its end is code that can carry a marker, so mark it and link the two with `//` refs. Don't write a `docs/external/` page for it.
 
@@ -187,7 +201,7 @@ The registry's reviewed section records each group as it was last reviewed: a fi
 4. Mark each site with the key and a label. For a site in another repository, mark it there if it's checked out, otherwise tell the user which file in which repository needs the marker.
 5. Add the group's table to the registry, creating it with `version = 1` if there's none: its relations, each written once, its files and selectors, and why its sites must change together.
 6. Check that the relations hold now: the lint checks value, set and text ops, and you judge the rest. Never silently change a value to make one hold.
-7. For sites in an external system, create or update `docs/external/<service>.md`.
+7. For sites in an external system, create or update `docs/external/<service>.md`, or name them in `has-no-file` (see External systems).
 8. Run `coupled --fix --update <key>` from the repo root, which writes the message after each label if the settings ask for it, and records the group in the registry's reviewed section; then fix what it reports, other than relations that don't hold now. If the command isn't found, tell the user it's installed from https://github.com/ianflanagan1/coupled, and check the markers and the table by reading them against this file.
 9. Reply `✅ Marked COUPLED:<key>:.`, then each site as `path:line`, then each relation that doesn't hold now.
 
@@ -195,5 +209,5 @@ The registry's reviewed section records each group as it was last reviewed: a fi
 
 1. Search for `COUPLED:<key>:` and read every site, down to its `COUPLED:<key>:END` if it has one, the group's table in the registry, and every file the table names. For a `//<git-host>/<owner>/<name>/<path>` ref, search that repository for the key too, or read the file on its git host if it isn't checked out.
 2. Change them all together, so every relation still holds. Change the table's relations only if what must hold has changed.
-3. For a site in another repository, change it there if it's checked out; otherwise tell the user what to change in which repository. For sites in an external system, tell the user what to change there, and update the external doc.
+3. For a site in another repository, change it there if it's checked out; otherwise tell the user what to change in which repository. For sites in an external system, tell the user what to change there, and where, as its doc or `has-no-file` says, and update its doc if it has one.
 4. Run `coupled` and fix what it reports. When it reports that the group differs from what was reviewed, check that every site it names is changed and the group holds, then rerun with `--update <key>`.

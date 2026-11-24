@@ -180,7 +180,17 @@ Each end of a coupling across repositories carries a marker, and each repository
 
 ### External systems
 
-When the other end lives in no repository at all (a cloud console, DNS, a provider's dashboard), describe its **current** configuration in `docs/external/<service>.md`, and mark each value there. The search then finds the doc, and the doc says what to change and where.
+When the other end lives in no repository at all (a cloud console, DNS, a provider's dashboard), prefer to describe its **current** configuration in `docs/external/<service>.md`, and mark each value there. The search then finds the doc, the doc says what to change and where, and the lint compares its values with the rest of the group.
+
+When a doc isn't worth writing, name the site in the group's `has-no-file` instead, by a label, with where it's set, and relate it like any other:
+
+```toml
+["COUPLED:oauth-redirect:"]
+relations = ["app = google"]
+has-no-file = { google = "Google Cloud console > APIs & Services > Credentials > the web client > Authorised redirect URIs" }
+```
+
+The lint can't read its value and lists it as not checked, but the search for the key still finds the table, which says what to change and where.
 
 Another repository is never an external system, even when it isn't checked out: its end can carry a marker, so mark both ends and link them with `//` refs rather than writing a doc that copies the other repository's values.
 
