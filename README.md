@@ -181,6 +181,8 @@ ln -s ~/projects/claude/coupled-tags/skills/ianf-coupled-tags ~/.claude/skills/i
 
 It's invoked as `/ianf-coupled-tags`. The `ianf-` prefix keeps it from colliding with other skills of the same name.
 
+To share it with a repository's contributors, copy the skill into its `.claude/skills/ianf-coupled-tags/` instead. `SKILL.md` starts with `<!-- COUPLED:IGNORE-FILE -->`, so coupled-tags-lint and its hooks skip the copy's example markers there, or wherever else it's put, with no `exclude` in the repository's settings.
+
 ### Hooks
 
 A skill's description doesn't guarantee Claude loads it just because it's editing a marked line. coupled-tags-lint's `coupled-tags-hook` does: as a `PostToolUse` hook on Read it shows Claude the groups in each file it reads, and as a `PreToolUse` hook on Edit, MultiEdit and Write it stops the first edit to a marked line in a session until Claude has seen the group. [Its README](https://github.com/ianflanagan1/coupled-tags-lint#the-claude-code-hooks) says how to add them to `~/.claude/settings.json`.
