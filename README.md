@@ -1,6 +1,6 @@
 # COUPLED tags
 
-A convention for code and values that must change together but can't share a single source of truth. Each place carries a greppable marker, `COUPLED:<key>: <label>`, and the repository's registry, `.coupled-tags.toml`, describes each group: how its places relate. Whoever changes one runs `grep --recursive --line-number 'COUPLED:<key>:'` and finds the others, and the group's table beside them.
+A convention for code and values that must change together but can't share a single source of truth. Each place carries a greppable marker, `COUPLED:<key>: <label>`, and the repository's registry, `coupled-tags-registry.toml`, describes each group: how its places relate. Whoever changes one runs `grep --recursive --line-number 'COUPLED:<key>:'` and finds the others, and the group's table beside them.
 
 It comes with a lint, [coupled-tags-lint](https://github.com/ianflanagan1/coupled-tags-lint), which checks that markers and registry agree, that the values they relate hold, and that no group has changed since it was last reviewed, and which gives Claude Code two hooks. This repository holds the Claude Code skill.
 

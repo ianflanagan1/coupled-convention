@@ -1,6 +1,6 @@
 ---
 name: ianf-coupled-tags
-description: "Add COUPLED markers (e.g. `# COUPLED:upload-limit: nginx`) and their group in .coupled-tags.toml, linking values or code that must change together but can't share a single source of truth. When editing anything marked COUPLED:, change every site in its group together."
+description: "Add COUPLED markers (e.g. `# COUPLED:upload-limit: nginx`) and their group in coupled-tags-registry.toml, linking values or code that must change together but can't share a single source of truth. When editing anything marked COUPLED:, change every site in its group together."
 argument-hint: <this> with <that> [as <key>]
 allowed-tools: Bash(coupled-tags-lint *)
 disable-model-invocation: false
@@ -30,7 +30,7 @@ Some things must change together but cannot share a single source of truth: a ru
 
 ## The registry
 
-`.coupled-tags.toml` at the repository's root, unless `.config/ianf-coupled-tags.toml` names another file as `registry`. Each group is a table named as its markers are searched for:
+`coupled-tags-registry.toml` at the repository's root, unless `.config/coupled-tags.toml` names another file as `registry`. Each group is a table named as its markers are searched for:
 
 ```toml
 version = 1
