@@ -30,7 +30,7 @@ Some things must change together but cannot share a single source of truth: a ru
 
 ## The registry
 
-`coupled-tags-registry.toml` at the repository's root, unless `.config/coupled-tags.toml` names another file as `registry`. Each group is a table named as its markers are searched for:
+`coupled-tags-registry.toml` at the repository's root, unless `.config/coupled-tags.toml` names another file as `registry-file`. Each group is a table named as its markers are searched for:
 
 ```toml
 version = 1
