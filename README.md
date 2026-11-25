@@ -42,7 +42,7 @@ private int calculateVat(int netPence) {
 ```
 ```toml
 ["COUPLED:vat-calculation:"]
-relations = ["same-text"]
+relations = ["invoice same-text cart"]
 ```
 
 `COUPLED:vat-calculation:END` closes each block, so the marker covers the whole function. Without it, a marker covers only the line after it. The two copies are in one language, so `same-text` has the lint compare them line by line. Copies in two languages would be `same-as`, which the lint can't compare: it records each block, and reports a change to one until the group is reviewed.
@@ -62,11 +62,11 @@ FROM python:3.12-slim
 ```
 ```toml
 ["COUPLED:python-version:"]
-relations = ["="]
-files = ["./.python-version"]
+relations = ["ci = docker", "pinned = docker"]
+has-no-marker = { pinned = "./.python-version" }
 ```
 
-`.python-version` can't take a comment, so the registry names it, and the lint checks its one line against the others, and reports it if it's missing. Versions match on the parts both give, so `3.12` and `3.12.4` agree.
+`.python-version` can't take a comment, so the registry gives it a label, and the lint checks its one line against the others, and reports it if it's missing. Versions match on the parts both give, so `3.12` and `3.12.4` agree.
 
 ---
 
@@ -116,44 +116,52 @@ A margin, with `+` and `-`: the proxy waits at least 5 s longer than the app.
 relations = ["proxy >= app + 5"]
 ```
 
-A selector, for a line holding more than the value:
+A regex after the label, between slashes, for a line holding more than the value:
 
 ```sh
-APP_URL=http://localhost:8080  # COUPLED:dev-port: url
+APP_URL=http://localhost:8080  # COUPLED:dev-port: url /:(\d+)$/
 HTTP_PORT=8080                 # COUPLED:dev-port: port
 ```
 ```toml
 ["COUPLED:dev-port:"]
 relations = ["url = port"]
-select = { url = ':(\d+)$' }
+```
+
+A file that can't hold a marker takes its regex in a table:
+
+```toml
+["COUPLED:dev-port:"]
+relations = ["dev = port"]
+has-no-marker = { dev = { file = "./web/package.json", regex = 'localhost:(\d+)' } }
 ```
 
 Two files that can't take a comment, and no marker at all:
 
 ```toml
 ["COUPLED:node-version:"]
-relations = ["./.nvmrc = ./package.json#/engines/node"]
+relations = ["nvmrc = engines"]
+has-no-marker = { nvmrc = "./.nvmrc", engines = "./package.json#/engines/node" }
 ```
 
-A file in another repository, which the lint names as not checked:
+A site in another repository that keeps the group too, which the lint names as not checked:
 
 ```toml
 ["COUPLED:coverage-listing-shape:"]
-relations = ["writer same-shape //github.com/ianflanagan1/code-rulebook/schema/coverage.schema.json"]
+relations = ["writer same-shape schema"]
+in-another-registry = { schema = "//github.com/ianflanagan1/code-rulebook" }
 why = "the rulebook's schema validates the listing this writes"
 ```
 
 A group whose op the lint can't compare, such as `same-shape`, must say why its sites are coupled, since that's all that tells a reviewer what must hold.
 
-Lists that must contain each other, which the lint compares by their members: the quoted values in each site's block, or what a selector picks out.
+Lists that must contain each other, which the lint compares by their members: the quoted values in each site's block, or what a regex picks out.
 
 ```ini
-disable_functions = exec,passthru,shell_exec  ; COUPLED:disabled-functions: php-ini
+disable_functions = exec,passthru,shell_exec  ; COUPLED:disabled-functions: php-ini /[=,]\s*(\w+)/
 ```
 ```toml
 ["COUPLED:disabled-functions:"]
 relations = ["php-ini subset-of phpstan"]
-select = { php-ini = '[=,]\s*(\w+)' }
 ```
 
 Prose that must stay true of the code it describes:
@@ -176,7 +184,7 @@ Name each group's labels on their own, along one axis, the one way its sites dif
 
 ### Other repositories
 
-Each end of a coupling across repositories carries a marker, and each repository's registry describes its own side, naming the other's files with `//<git-host>/<owner>/<name>/<path>`. The lint doesn't read other repositories, since which revision to compare against, and how to reach it, depend on how they're released; it names them in its status line as not checked.
+A group across repositories has the same key in each, and each repository's registry describes only its own side, by a marker or a `has-no-marker` entry, and names the other's sites by their labels in `in-another-registry`, by the repository alone: `//<git-host>/<owner>/<name>`. So a file moves in one repository with no change to the other. A file in a repository that keeps no such group, such as a third party's published schema, goes in `has-no-marker` instead, as `//<git-host>/<owner>/<name>/<path>[#<pointer>]`. The lint doesn't read other repositories, since which revision to compare against, and how to reach it, depend on how they're released; it names them in its status line as not checked.
 
 ### External systems
 
@@ -192,7 +200,7 @@ has-no-file = { google = "Google Cloud console > APIs & Services > Credentials >
 
 The lint can't read its value and lists it as not checked, but the search for the key still finds the table, which says what to change and where.
 
-Another repository is never an external system, even when it isn't checked out: its end can carry a marker, so mark both ends and link them with `//` refs rather than writing a doc that copies the other repository's values.
+Another repository is never an external system, even when it isn't checked out: its own registry can describe its end, so give the group to both and link them with `in-another-registry` entries rather than writing a doc that copies the other repository's values.
 
 ## Claude Code
 
