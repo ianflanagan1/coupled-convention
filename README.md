@@ -154,7 +154,7 @@ why = "the rulebook's schema validates the listing this writes"
 
 A group whose op the lint can't compare, such as `same-shape`, must say why its sites are coupled, since that's all that tells a reviewer what must hold.
 
-Lists that must contain each other, which the lint compares by their members: the quoted values in each site's block, or what a regex picks out.
+Lists that must contain each other, which the lint compares by their members: the quoted values on each site's line, or in its block, or what a regex picks out.
 
 ```ini
 disable_functions = exec,passthru,shell_exec  ; COUPLED:disabled-functions: php-ini /[=,]\s*(\w+)/

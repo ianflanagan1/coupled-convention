@@ -25,13 +25,13 @@ Some things must change together but cannot share a single source of truth: a ru
 - A regex between slashes may follow the label, picking the site's value out of its line, or each of its members out of its block, when the lint can't (see Values, and Sets and text): `# COUPLED:dev-port: url /:(\d+)$/`. Write a `/` in it as `\/`; prose after it follows a `.`, as after a label. In a block comment, keep the comment's closer out of it, even across its slashes: write `\s*/` in `/* */` as `\s{0,}/`.
 - A site in two groups gets two markers; they can share a comment: `# COUPLED:a: x. COUPLED:b: y`.
 - A marker describes the code before its comment on its line, or for a marker on a comment line, the first line of code after it, past other comment lines but not a blank line.
-- `COUPLED:<key>:END`, in a comment on the line after a block's last, closes the nearest marker of its key above it, so it describes every line down to the END. Not in groups using value ops, where a marker describes one line. Blocks of different keys can nest but not overlap.
+- `COUPLED:<key>:END`, in a comment on the line after a block's last, closes the nearest marker of its key above it, so it describes every line down to the END. Use one only for a site of more than one line, whatever its group's ops: a marker already describes one line, so a set of members on one line, like a single value, needs no END, and the lint reports an END closing one line. Not in groups using value ops, where a marker describes one line. Blocks of different keys can nest but not overlap.
 - `COUPLED:IGNORE-FILE`, on a line of its own, says a file's `COUPLED:` text is all examples, as in this skill: the lint and the hooks skip the file. Don't add it to a file holding real sites.
 - If the repository's settings set `markers-show-relations` or `markers-point-to-registry`, each label is followed by a message: the site's relations, then what to search for and where the group is described. `coupled --fix` writes it from the registry; don't write or edit it by hand.
 
 ## The registry
 
-`coupled-registry.toml` at the repository's root, unless `.config/coupled.toml` names another file as `registry-file`. Each group is a table named as its markers are searched for:
+`coupled-registry.toml` at the repository's root, unless the settings file, `.config/coupled.toml` or `coupled.toml`, names another file as `registry-file`. Each group is a table named as its markers are searched for:
 
 ```toml
 version = 1
@@ -46,7 +46,7 @@ A group's table gives its fields in the order below, which the lint checks.
 - `relations`: each `<label> <op> <label> [<arith> <number>]`, read as: the first site's value, by op, the second's after the formula. Every relation names two sites by their labels, and every site is named in at least one. Write each relation once; there are no mirrors. For a group whose sites are all the same, relate each to one of them: `["ci = docker", "nvmrc = docker"]`.
 - `<op>` is one of four kinds, by what it reads each site as, and a group uses only one kind; split it into two keys if it needs two.
   - Value ops `=`, `!=`, `<`, `<=`, `>`, `>=` compare single values, and the lint checks them (see Values).
-  - Set ops `same-set`, `subset-of` and `superset-of` compare the names each site holds, such as an enum's members, a table's columns or a list, and the lint checks them (see Sets and text).
+  - Set ops `same-set`, `subset-of`, `superset-of`, `proper-subset-of`, `proper-superset-of` and `disjoint-from` compare the names each site holds, such as an enum's members, a table's columns or a list, and `member-of` and `has-member` relate one value to them, such as a default to the values allowed; the lint checks them all (see Sets and text).
   - The text op `same-text` compares the sites' text, such as a block copied between two files, and the lint checks it (see Sets and text).
   - Judged ops relate code or prose that only a reader can compare, so the lint records each block and reports a change to one: `same-as` (code that must behave the same, such as one calculation in two languages), `same-shape` (types and schemas with the same fields), `description-of` (prose that must stay true of code; `described-by` is the same relation written from the code).
   - Choose a kind the lint checks wherever the sites can be read that way, and a judged op only when they can't.
@@ -96,13 +96,17 @@ In a group using set ops, the lint reads each site's members from its block, whi
 
 A file gives the items of the JSON list at its pointer, or the keys of the object there, or each match of its regex, or with neither, its lines. Members compare as text, in any order.
 
+- `proper-subset-of` and `proper-superset-of` also need the other set to differ: use them only when what must hold is that one side has more, such as a table accepting statuses a cleanup job sets that the app never gives.
+- `disjoint-from` holds when the sets share no member, such as reserved names and the routes users can claim.
+- `member-of` and `has-member` read their member (the first site of `member-of`, the second of `has-member`) as one value, as in Values, and hold when the set holds it: `default member-of levels`. A site is read one way in its group, so the member can't be a set in another relation of it.
+
 In a group using `same-text`, the lint compares the sites' blocks line by line. Indentation, blank lines and the markers of sites inside a block aren't part of its text. A file's text is all of it, or the JSON at its pointer.
 
 When only part of what two sites share can be compared, mark them for two groups: a table's column names and a model's field names as `same-set`, and the two under `same-shape` for their types.
 
 ## Placement
 
-Use the file's own comment syntax. Put the marker in a trailing comment on the line it describes. Where the line can't take one, or a trailing comment would change the value (Dockerfiles, many `.env` parsers, Makefile variables), or the site is a block, put it in the comment directly above, with no blank line before the code. For a whole function, put it in the docblock and close it with an END after the function. In Markdown, write it as plain visible text.
+Use the file's own comment syntax. Put the marker in a trailing comment on the line it describes. Where the line can't take one, or a trailing comment would change the value (Dockerfiles, many `.env` parsers, Makefile variables), or the site spans several lines, put it in the comment directly above, with no blank line before the code. For a whole function, put it in the docblock and close it with an END after the function. In Markdown, write it as plain visible text.
 
 ## Choosing the key and labels
 
